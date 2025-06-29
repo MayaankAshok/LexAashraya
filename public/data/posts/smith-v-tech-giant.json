@@ -1,0 +1,12 @@
+{
+  "id": "smith-v-tech-giant",
+  "title": "Supreme Court Ruling: Smith v. Tech Giant Inc.",
+  "date": "2025-05-10",
+  "author": "John Smith, Esq.",
+  "summary": "Breaking down the landmark decision on digital property rights and its far-reaching implications.",
+  "content": "In a 6-3 decision, the Supreme Court has ruled that individuals maintain ownership rights to their digital assets even when stored on third-party platforms. The case, Smith v. Tech Giant Inc., originated from a dispute over monetized content that was removed without compensation.\n\n## Court Opinion\n\nJustice Elena Rodriguez, writing for the majority, emphasized that \"digital property deserves the same protections as physical property.\" The Court found that terms of service agreements cannot override fundamental property rights, particularly when platforms profit directly from user content.\n\n## Dissenting Opinion\n\nJustice Marcus Thompson, joined by Justices Chen and Williams, argued that the decision \"fails to account for the complex contractual arrangements that govern modern digital platforms\" and may lead to \"unforeseen consequences for innovation in the technology sector.\"\n\n## Implications\n\nThis decision will fundamentally reshape how technology companies engage with user-generated content. Platforms must now:\n\n1. Provide clear terms regarding content ownership\n2. Establish fair compensation mechanisms for monetized content\n3. Develop transparent processes for content removal\n4. Create appeals systems for content creators\n\nThe ruling takes effect immediately and applies retrospectively to pending cases.",
+  "image": "https://images.unsplash.com/photo-1589391886645-d51941baf7fb?q=80&w=1470&auto=format&fit=crop",
+  "tags": ["Case Law", "Digital Rights", "Supreme Court"],
+  "citation": "598 U.S. 427 (2025)",
+  "jurisdiction": "Federal"
+}
