@@ -5,12 +5,119 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
+import { Client as FTPClient } from 'basic-ftp';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// FTP Configuration
+const FTP_CONFIG = {
+  host: process.env.FTP_HOST?.replace('ftp://', '') || 'your-domain.com',
+  user: process.env.FTP_USER || 'your-username',
+  password: process.env.FTP_PASSWORD || 'your-password',
+  port: parseInt(process.env.FTP_PORT) || 21,
+  secure: false, // Set to true if using FTPS
+  remoteBasePath: '/data' // Adjust this to your hosting structure
+};
+
+// FTP Helper Functions
+async function uploadToFTP(localPath, remotePath) {
+  const client = new FTPClient();
+  // Remove verbose logging to reduce console output
+  // client.ftp.verbose = true;
+  
+  try {
+    await client.access(FTP_CONFIG);
+    
+    // Ensure remote directory exists
+    const remoteDir = path.dirname(remotePath);
+    try {
+      await client.ensureDir(remoteDir);
+    } catch (dirError) {
+      // Silent directory creation - only log if it fails completely
+    }
+    
+    await client.uploadFrom(localPath, remotePath);
+    console.log(`📤 FTP: Uploaded ${path.basename(localPath)} → ${remotePath}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ FTP Upload Error for ${path.basename(localPath)}:`, error.message);
+    return false;
+  } finally {
+    client.close();
+  }
+}
+
+async function deleteFromFTP(remotePath) {
+  const client = new FTPClient();
+  // Remove verbose logging to reduce console output
+  // client.ftp.verbose = true;
+  
+  try {
+    await client.access(FTP_CONFIG);
+    await client.remove(remotePath);
+    console.log(`🗑️  FTP: Deleted ${path.basename(remotePath)}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ FTP Delete Error for ${path.basename(remotePath)}:`, error.message);
+    return false;
+  } finally {
+    client.close();
+  }
+}
+
+async function uploadDirectoryToFTP(localDir, remoteDir) {
+  const client = new FTPClient();
+  // Remove verbose logging to reduce console output
+  // client.ftp.verbose = true;
+  
+  try {
+    await client.access(FTP_CONFIG);
+    await client.uploadFromDir(localDir, remoteDir);
+    console.log(`📁 FTP: Uploaded directory ${path.basename(localDir)} → ${remoteDir}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ FTP Directory Upload Error for ${path.basename(localDir)}:`, error.message);
+    return false;
+  } finally {
+    client.close();
+  }
+}
+
+// Helper function to sync post to FTP
+async function syncPostToFTP(postId) {
+  const localPath = path.join(postsDir, `${postId}.json`);
+  const remotePath = `${FTP_CONFIG.remoteBasePath}/posts/${postId}.json`;
+  
+  if (fs.existsSync(localPath)) {
+    return await uploadToFTP(localPath, remotePath);
+  }
+  return false;
+}
+
+// Helper function to sync manifest to FTP
+async function syncManifestToFTP() {
+  const remotePath = `${FTP_CONFIG.remoteBasePath}/posts-manifest.json`;
+  return await uploadToFTP(manifestPath, remotePath);
+}
+
+// Helper function to sync attachment to FTP
+async function syncAttachmentToFTP(filename) {
+  const localPath = path.join(uploadsDir, filename);
+  const remotePath = `${FTP_CONFIG.remoteBasePath}/uploads/${filename}`;
+  
+  if (fs.existsSync(localPath)) {
+    return await uploadToFTP(localPath, remotePath);
+  }
+  return false;
+}
 
 // Middleware
 app.use(cors());
@@ -50,7 +157,30 @@ function readManifest() {
 // Helper function to write the posts manifest
 function writeManifest(manifest) {
   try {
-    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    // Ensure the directory exists
+    const manifestDir = path.dirname(manifestPath);
+    if (!fs.existsSync(manifestDir)) {
+      fs.mkdirSync(manifestDir, { recursive: true });
+    }
+    
+    // Write with explicit encoding and proper formatting
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+    
+    console.log('Manifest updated successfully locally');
+    
+    // Sync to FTP asynchronously with better error handling
+    syncManifestToFTP()
+      .then(success => {
+        if (success) {
+          console.log('✅ Manifest synced to FTP successfully');
+        } else {
+          console.error('❌ Failed to sync manifest to FTP');
+        }
+      })
+      .catch(error => {
+        console.error('❌ Error syncing manifest to FTP:', error.message);
+      });
+    
     return true;
   } catch (error) {
     console.error('Error writing manifest:', error);
@@ -140,12 +270,53 @@ function getAllPosts() {
   }
 }
 
+// Helper function to create backup before updating
+function createBackup(postId) {
+  try {
+    const filename = `${postId}.json`;
+    const filePath = path.join(postsDir, filename);
+    
+    if (fs.existsSync(filePath)) {
+      const backupDir = path.join(__dirname, '../backups/posts');
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+      }
+      
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const backupFilename = `${postId}_backup_${timestamp}.json`;
+      const backupPath = path.join(backupDir, backupFilename);
+      
+      fs.copyFileSync(filePath, backupPath);
+      console.log(`Backup created: ${backupFilename}`);
+    }
+  } catch (error) {
+    console.error('Error creating backup:', error);
+    // Don't fail the operation if backup fails
+  }
+}
+
 // Helper function to save a post to filesystem
 function savePost(post) {
   try {
+    // Ensure the posts directory exists
+    if (!fs.existsSync(postsDir)) {
+      fs.mkdirSync(postsDir, { recursive: true });
+    }
+    
     const filename = `${post.id}.json`;
     const filePath = path.join(postsDir, filename);
-    fs.writeFileSync(filePath, JSON.stringify(post, null, 2));
+    
+    // Write with explicit encoding and proper formatting
+    const postContent = JSON.stringify(post, null, 2);
+    fs.writeFileSync(filePath, postContent, 'utf8');
+    
+    console.log(`Post saved successfully: ${filename}`);
+    
+    // Sync to FTP asynchronously
+    syncPostToFTP(post.id).catch(error => {
+      console.error(`Failed to sync post ${post.id} to FTP:`, error);
+    });
+    
     return true;
   } catch (error) {
     console.error('Error saving post:', error);
@@ -158,11 +329,23 @@ function deletePost(postId) {
   try {
     const filename = `${postId}.json`;
     const filePath = path.join(postsDir, filename);
+    
     if (fs.existsSync(filePath)) {
+      // Delete the file locally
       fs.unlinkSync(filePath);
+      console.log(`Post deleted successfully: ${filename}`);
+      
+      // Delete from FTP asynchronously
+      const remotePath = `${FTP_CONFIG.remoteBasePath}/posts/${filename}`;
+      deleteFromFTP(remotePath).catch(error => {
+        console.error(`Failed to delete post ${postId} from FTP:`, error);
+      });
+      
       return true;
+    } else {
+      console.log(`Post file not found: ${filename}`);
+      return false;
     }
-    return false;
   } catch (error) {
     console.error('Error deleting post:', error);
     return false;
@@ -409,6 +592,9 @@ app.put('/api/posts/:id', (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: title, content, author' });
     }
     
+    // Create backup before updating
+    createBackup(oldPostId);
+    
     // Generate new ID based on title (same logic as frontend)
     const newPostId = postData.title
       .toLowerCase()
@@ -425,6 +611,12 @@ app.put('/api/posts/:id', (req, res) => {
         try {
           fs.unlinkSync(oldFilePath);
           console.log(`Deleted old post file: ${oldPostId}.json`);
+          
+          // Delete old file from FTP asynchronously
+          const oldRemotePath = `${FTP_CONFIG.remoteBasePath}/posts/${oldPostId}.json`;
+          deleteFromFTP(oldRemotePath).catch(error => {
+            console.error(`Failed to delete old post ${oldPostId} from FTP:`, error);
+          });
         } catch (deleteError) {
           console.error('Error deleting old post file:', deleteError);
           // Continue with the update even if deletion fails
@@ -438,6 +630,7 @@ app.put('/api/posts/:id', (req, res) => {
     const success = savePost(postData);
     
     if (success) {
+      console.log(`Post updated successfully: ${oldPostId} -> ${newPostId}`);
       res.json(postData);
     } else {
       res.status(500).json({ error: 'Failed to update post' });
@@ -502,6 +695,13 @@ app.post('/api/attachments/upload', upload.array('files', 10), (req, res) => {
       filename: file.filename, // Server filename
       uploadDate: new Date().toISOString()
     }));
+
+    // Sync uploaded files to FTP asynchronously
+    req.files.forEach(file => {
+      syncAttachmentToFTP(file.filename).catch(error => {
+        console.error(`Failed to sync attachment ${file.filename} to FTP:`, error);
+      });
+    });
 
     res.json({ attachments });
   } catch (error) {
@@ -599,8 +799,15 @@ app.delete('/api/attachments/:filename', (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    // Delete file
+    // Delete file locally
     fs.unlinkSync(filePath);
+    
+    // Delete from FTP asynchronously
+    const remotePath = `${FTP_CONFIG.remoteBasePath}/uploads/${filename}`;
+    deleteFromFTP(remotePath).catch(error => {
+      console.error(`Failed to delete attachment ${filename} from FTP:`, error);
+    });
+    
     res.json({ message: 'File deleted successfully' });
   } catch (error) {
     console.error('Delete error:', error);
@@ -636,6 +843,80 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
+// FTP sync endpoint - manually sync all data to FTP
+app.post('/api/sync-ftp', async (req, res) => {
+  try {
+    console.log('Starting manual FTP sync...');
+    
+    // Sync all posts
+    const posts = getAllPosts();
+    let postsSynced = 0;
+    for (const post of posts) {
+      const success = await syncPostToFTP(post.id);
+      if (success) postsSynced++;
+    }
+    
+    // Sync manifest
+    const manifestSynced = await syncManifestToFTP();
+    
+    // Sync all uploads
+    let uploadsSynced = 0;
+    if (fs.existsSync(uploadsDir)) {
+      const files = fs.readdirSync(uploadsDir);
+      for (const file of files) {
+        const success = await syncAttachmentToFTP(file);
+        if (success) uploadsSynced++;
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: 'FTP sync completed',
+      results: {
+        posts: `${postsSynced}/${posts.length}`,
+        manifest: manifestSynced,
+        uploads: `${uploadsSynced}/${fs.existsSync(uploadsDir) ? fs.readdirSync(uploadsDir).length : 0}`
+      }
+    });
+  } catch (error) {
+    console.error('FTP sync error:', error);
+    res.status(500).json({ error: 'Failed to sync to FTP', details: error.message });
+  }
+});
+
+// FTP status check
+app.get('/api/ftp-status', async (req, res) => {
+  const client = new FTPClient();
+  try {
+    await client.access(FTP_CONFIG);
+    await client.list('/');
+    res.json({ 
+      connected: true, 
+      message: 'FTP connection successful',
+      config: {
+        host: FTP_CONFIG.host,
+        user: FTP_CONFIG.user,
+        port: FTP_CONFIG.port,
+        remoteBasePath: FTP_CONFIG.remoteBasePath
+      }
+    });
+  } catch (error) {
+    res.json({ 
+      connected: false, 
+      message: 'FTP connection failed', 
+      error: error.message,
+      config: {
+        host: FTP_CONFIG.host,
+        user: FTP_CONFIG.user,
+        port: FTP_CONFIG.port,
+        remoteBasePath: FTP_CONFIG.remoteBasePath
+      }
+    });
+  } finally {
+    client.close();
+  }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
@@ -658,4 +939,39 @@ app.use((error, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Uploads directory: ${uploadsDir}`);
+  console.log(`Posts directory: ${postsDir}`);
+  console.log(`Manifest file: ${manifestPath}`);
+  console.log('Files will be written to public/data/ for FTP deployment');
+  
+  // Log FTP configuration
+  console.log('\nFTP Configuration:');
+  console.log(`Host: ${FTP_CONFIG.host}`);
+  console.log(`User: ${FTP_CONFIG.user}`);
+  console.log(`Port: ${FTP_CONFIG.port}`);
+  console.log(`Remote Path: ${FTP_CONFIG.remoteBasePath}`);
+  console.log('Note: Set FTP environment variables for automatic sync');
+  
+  // Log current file structure
+  console.log('\nCurrent data structure:');
+  try {
+    if (fs.existsSync(postsDir)) {
+      const posts = fs.readdirSync(postsDir);
+      console.log(`Posts: ${posts.length} files`);
+    }
+    if (fs.existsSync(uploadsDir)) {
+      const uploads = fs.readdirSync(uploadsDir);
+      console.log(`Uploads: ${uploads.length} files`);
+    }
+    if (fs.existsSync(manifestPath)) {
+      console.log('Manifest: exists');
+    } else {
+      console.log('Manifest: will be created');
+    }
+  } catch (err) {
+    console.log('Error reading directories:', err.message);
+  }
+  
+  console.log('\nAPI Endpoints:');
+  console.log('- POST /api/sync-ftp - Manual FTP sync');
+  console.log('- GET /api/ftp-status - Check FTP connection');
 });
