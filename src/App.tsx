@@ -5,6 +5,7 @@ import TagSearchPanel from './components/TagSearchPanel'
 import BlogList from './components/BlogList'
 import BlogPostDetail from './components/BlogPostDetail'
 import PostEditor from './components/PostEditor'
+import Disclaimer from './components/Disclaimer'
 import type { BlogPostProps } from './types'
 import { BlogServiceFactory } from './services/blogServiceFactory'
 
@@ -12,11 +13,19 @@ function App() {
   const [blogPosts, setBlogPosts] = useState<BlogPostProps[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showDisclaimer, setShowDisclaimer] = useState(true)
   const [searchInfo, setSearchInfo] = useState<{
     mode: 'all' | 'tag' | 'keyword' | 'combined';
     query?: string;
     tags?: string[];
   }>({ mode: 'all' })
+  
+  // Function to handle disclaimer close
+  const handleDisclaimerClose = () => {
+    setShowDisclaimer(false)
+    // Store in localStorage to remember user has seen disclaimer
+    localStorage.setItem('disclaimerAccepted', 'true')
+  }
   
   // Function to set posts from search results
   const setPosts = (posts: BlogPostProps[], searchMode: 'all' | 'tag' | 'keyword' | 'combined' = 'all', query?: string, tags?: string[]) => {
@@ -45,6 +54,12 @@ function App() {
   
   // Load blog posts when component mounts
   useEffect(() => {
+    // Check if user has already accepted disclaimer
+    const disclaimerAccepted = localStorage.getItem('disclaimerAccepted')
+    if (disclaimerAccepted === 'true') {
+      setShowDisclaimer(false)
+    }
+    
     const initializeApp = async () => {
       try {
         setIsLoading(true)
@@ -67,12 +82,17 @@ function App() {
 
   return (
     <div className="app-container">
+      <Disclaimer 
+        isOpen={showDisclaimer} 
+        onClose={handleDisclaimerClose} 
+      />
+      
       <header className="app-header">
         <Link to="/" className="title-link">
           <h1>Legal Insight</h1>
         </Link>
         <p className="header-tagline">Navigating the Complexities of Law</p>
-        {BlogServiceFactory.isAdminEnabled() && (
+        {BlogServiceFactory.shouldShowAdminUI() && (
           <div className="admin-controls">
             <Link to="/admin/posts" className="admin-link">Admin: Manage Posts</Link>
           </div>
@@ -100,30 +120,26 @@ function App() {
         {/* Detail view route for a specific post */}
         <Route path="/post/:id" element={<BlogPostDetail />} />
         
-        {/* Admin routes - only available in admin mode */}
-        {BlogServiceFactory.isAdminEnabled() && (
-          <>
-            <Route path="/admin/posts" element={
-              <PostEditor 
-                onPostSaved={handlePostChanged}
-                onPostDeleted={handlePostChanged}
-              />
-            } />
-            <Route path="/admin/posts/new" element={
-              <PostEditor 
-                isNew={true}
-                onPostSaved={handlePostChanged}
-                onPostDeleted={handlePostChanged}
-              />
-            } />
-            <Route path="/admin/posts/edit/:id" element={
-              <PostEditor 
-                onPostSaved={handlePostChanged}
-                onPostDeleted={handlePostChanged}
-              />
-            } />
-          </>
-        )}
+        {/* Admin routes - always available but link only shown when shouldShowAdminUI is true */}
+        <Route path="/admin/posts" element={
+          <PostEditor 
+            onPostSaved={handlePostChanged}
+            onPostDeleted={handlePostChanged}
+          />
+        } />
+        <Route path="/admin/posts/new" element={
+          <PostEditor 
+            isNew={true}
+            onPostSaved={handlePostChanged}
+            onPostDeleted={handlePostChanged}
+          />
+        } />
+        <Route path="/admin/posts/edit/:id" element={
+          <PostEditor 
+            onPostSaved={handlePostChanged}
+            onPostDeleted={handlePostChanged}
+          />
+        } />
       </Routes>
     </div>
   )

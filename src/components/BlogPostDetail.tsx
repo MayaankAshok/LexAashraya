@@ -5,6 +5,7 @@ import { BlogServiceFactory } from '../services/blogServiceFactory';
 import { ClientAttachmentService } from '../services/clientAttachmentService';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
 import '../styles/BlogPostDetail.css';
 
 const BlogPostDetail = () => {
@@ -96,7 +97,10 @@ const BlogPostDetail = () => {
         <p>{post.summary}</p>
       </div>
         <div className="detail-content">
-        <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+        <ReactMarkdown 
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeRaw]}
+        >
           {post.content}
         </ReactMarkdown>
       </div>
