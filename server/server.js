@@ -24,7 +24,7 @@ const FTP_CONFIG = {
   password: process.env.FTP_PASSWORD || 'your-password',
   port: parseInt(process.env.FTP_PORT) || 21,
   secure: false, // Set to true if using FTPS
-  remoteBasePath: process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html' // Adjust this to your hosting structure
+  remoteBasePath: process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html/data' // Adjust this to your hosting structure
 };
 
 // FTP Helper Functions
@@ -117,6 +117,33 @@ async function syncAttachmentToFTP(filename) {
     return await uploadToFTP(localPath, remotePath);
   }
   return false;
+}
+
+// Helper function to download manifest from FTP
+async function downloadManifestFromFTP() {
+  const client = new FTPClient();
+  
+  try {
+    await client.access(FTP_CONFIG);
+    
+    const remotePath = `${FTP_CONFIG.remoteBasePath}/posts-manifest.json`;
+    
+    // Ensure local directory exists
+    const manifestDir = path.dirname(manifestPath);
+    if (!fs.existsSync(manifestDir)) {
+      fs.mkdirSync(manifestDir, { recursive: true });
+    }
+    
+    await client.downloadTo(manifestPath, remotePath);
+    console.log('✅ Downloaded posts-manifest.json from FTP');
+    return true;
+  } catch (error) {
+    console.error('⚠️  Failed to download manifest from FTP:', error.message);
+    console.log('ℹ️  Will use local manifest or create new one');
+    return false;
+  } finally {
+    client.close();
+  }
 }
 
 // Middleware
@@ -936,7 +963,7 @@ app.use((error, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Uploads directory: ${uploadsDir}`);
   console.log(`Posts directory: ${postsDir}`);
@@ -950,6 +977,10 @@ app.listen(PORT, () => {
   console.log(`Port: ${FTP_CONFIG.port}`);
   console.log(`Remote Path: ${FTP_CONFIG.remoteBasePath}`);
   console.log('Note: Set FTP environment variables for automatic sync');
+  
+  // Download manifest from FTP on server start
+  console.log('\n🔄 Syncing manifest from FTP...');
+  await downloadManifestFromFTP();
   
   // Log current file structure
   console.log('\nCurrent data structure:');
