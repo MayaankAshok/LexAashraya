@@ -12,12 +12,13 @@ const __dirname = path.dirname(__filename);
 
 // FTP Configuration
 const FTP_CONFIG = {
-  host: process.env.FTP_HOST?.replace('ftp://', '') || 'your-domain.com',
+  host: process.env.FTP_HOST?.replace(/^ftp:\/\//, '') || 'your-domain.com',
   user: process.env.FTP_USER || 'your-username',
   password: process.env.FTP_PASSWORD || 'your-password',
   port: parseInt(process.env.FTP_PORT) || 21,
   secure: false, // Set to true if using FTPS
-  remoteBasePath: '/data' // Adjust this to your hosting structure
+  remoteBasePath: process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html',
+  remoteDataPath: `${process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html'}/data`
 };
 
 // Local data directory
@@ -31,7 +32,7 @@ async function uploadDataToFTP() {
     console.log(`🌐 Host: ${FTP_CONFIG.host}`);
     console.log(`👤 User: ${FTP_CONFIG.user}`);
     console.log(`📁 Local data dir: ${localDataDir}`);
-    console.log(`📁 Remote base path: ${FTP_CONFIG.remoteBasePath}`);
+    console.log(`📁 Remote data path: ${FTP_CONFIG.remoteDataPath}`);
     
     await client.access(FTP_CONFIG);
     console.log('✅ Connected to FTP server successfully\n');
@@ -42,10 +43,10 @@ async function uploadDataToFTP() {
       return;
     }
     
-    // Ensure remote base directory exists
+    // Ensure remote data directory exists
     try {
-      await client.ensureDir(FTP_CONFIG.remoteBasePath);
-      console.log(`📁 Ensured remote directory exists: ${FTP_CONFIG.remoteBasePath}`);
+      await client.ensureDir(FTP_CONFIG.remoteDataPath);
+      console.log(`📁 Ensured remote directory exists: ${FTP_CONFIG.remoteDataPath}`);
     } catch (error) {
       console.log(`⚠️  Could not create remote directory: ${error.message}`);
     }
@@ -53,13 +54,13 @@ async function uploadDataToFTP() {
     console.log('\n🚀 Starting data upload...\n');
     
     // Upload the entire data directory
-    await client.uploadFromDir(localDataDir, FTP_CONFIG.remoteBasePath);
+    await client.uploadFromDir(localDataDir, FTP_CONFIG.remoteDataPath);
     
-    console.log('\n✅ Data upload completed successfully!');
+    console.log('\n Data upload completed hi successfully!');
     
     // List remote directory to confirm upload
-    console.log('\n📋 Remote directory listing:');
-    const remoteFiles = await client.list(FTP_CONFIG.remoteBasePath);
+    console.log('\n 📋 Remote directory listing:');
+    const remoteFiles = await client.list(FTP_CONFIG.remoteDataPath);
     remoteFiles.forEach(file => {
       const icon = file.isDirectory ? '📁' : '📄';
       const size = file.isDirectory ? '' : ` (${file.size} bytes)`;

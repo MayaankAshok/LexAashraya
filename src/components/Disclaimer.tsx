@@ -12,23 +12,17 @@ const Disclaimer = ({ isOpen, onClose }: DisclaimerProps) => {
     <div className="disclaimer-overlay">
       <div className="disclaimer-modal">
         <div className="disclaimer-header">
-          <h2>Important Disclaimer</h2>
+          <h2>LexAashraya - Legal Disclaimer </h2>
         </div>
         <div className="disclaimer-content">
           <p>
-            <strong>Legal Disclaimer:</strong> The information provided on this website is for general informational purposes only and does not constitute legal advice.
+            The Bar Council of India does not permit advertisement or solicitation by advocates in any form or manner. By accessing this website, www.lexaashraya.in, you acknowledge and confirm that you are seeking information relating to LexAashraya and its representatives of your own accord and that there has been no form of solicitation, advertisement or inducement by LexAashraya and its representatives.
           </p>
           <p>
-            The content on this site should not be relied upon as a substitute for professional legal counsel. Laws and regulations vary by jurisdiction and are subject to change.
+            The content of this website is for informational purposes only and should not be interpreted as soliciting or advertisement. No material/information provided on this website should be construed as legal advice. LexAashraya and its representatives shall not be liable for consequences of any action taken by relying on the material/information provided on this website.
           </p>
           <p>
-            <strong>No Attorney-Client Relationship:</strong> Use of this website does not create an attorney-client relationship between you and any legal professional associated with this site.
-          </p>
-          <p>
-            <strong>Accuracy:</strong> While we strive to provide accurate and up-to-date information, we make no representations or warranties regarding the completeness, accuracy, or reliability of any information on this site.
-          </p>
-          <p>
-            For specific legal advice regarding your situation, please consult with a qualified attorney in your jurisdiction.
+            The contents of this website are the intellectual property of LexAashraya.
           </p>
         </div>
         <div className="disclaimer-footer">

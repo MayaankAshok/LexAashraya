@@ -24,7 +24,7 @@ const FTP_CONFIG = {
   password: process.env.FTP_PASSWORD || 'your-password',
   port: parseInt(process.env.FTP_PORT) || 21,
   secure: false, // Set to true if using FTPS
-  remoteBasePath: '/data' // Adjust this to your hosting structure
+  remoteBasePath: process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html' // Adjust this to your hosting structure
 };
 
 // FTP Helper Functions

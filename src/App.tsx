@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Routes, Route, Link } from 'react-router-dom'
 import './styles/App.css'
 import TagSearchPanel from './components/TagSearchPanel'
@@ -23,9 +23,24 @@ function App() {
   // Function to handle disclaimer close
   const handleDisclaimerClose = () => {
     setShowDisclaimer(false)
-    // Store in localStorage to remember user has seen disclaimer
-    localStorage.setItem('disclaimerAccepted', 'true')
+    // Store current timestamp to track when disclaimer was accepted
+    const now = new Date().getTime()
+    localStorage.setItem('disclaimerAccepted', now.toString())
   }
+  
+  // Function to check if disclaimer should be shown (every 24 hours)
+  const shouldShowDisclaimer = useCallback(() => {
+    const lastAccepted = localStorage.getItem('disclaimerAccepted')
+    if (!lastAccepted) {
+      return true // Never accepted before
+    }
+    
+    const lastAcceptedTime = parseInt(lastAccepted)
+    const now = new Date().getTime()
+    const twentyFourHours = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+    
+    return (now - lastAcceptedTime) >= twentyFourHours
+  }, [])
   
   // Function to set posts from search results
   const setPosts = (posts: BlogPostProps[], searchMode: 'all' | 'tag' | 'keyword' | 'combined' = 'all', query?: string, tags?: string[]) => {
@@ -54,11 +69,8 @@ function App() {
   
   // Load blog posts when component mounts
   useEffect(() => {
-    // Check if user has already accepted disclaimer
-    const disclaimerAccepted = localStorage.getItem('disclaimerAccepted')
-    if (disclaimerAccepted === 'true') {
-      setShowDisclaimer(false)
-    }
+    // Check if user needs to see the disclaimer (every 24 hours)
+    setShowDisclaimer(shouldShowDisclaimer())
     
     const initializeApp = async () => {
       try {
@@ -78,7 +90,7 @@ function App() {
     }
 
     initializeApp()
-  }, [])
+  }, [shouldShowDisclaimer])
 
   return (
     <div className="app-container">

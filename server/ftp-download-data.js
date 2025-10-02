@@ -12,12 +12,13 @@ const __dirname = path.dirname(__filename);
 
 // FTP Configuration
 const FTP_CONFIG = {
-  host: process.env.FTP_HOST?.replace('ftp://', '') || 'your-domain.com',
+  host: process.env.FTP_HOST?.replace(/^ftp:\/\//, '') || 'your-domain.com',
   user: process.env.FTP_USER || 'your-username',
   password: process.env.FTP_PASSWORD || 'your-password',
   port: parseInt(process.env.FTP_PORT) || 21,
   secure: false,
-  remoteBasePath: '/data' // Remote data folder path
+  remoteBasePath: process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html',
+  remoteDataPath: `${process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html'}/data`
 };
 
 // Local paths
@@ -39,17 +40,17 @@ async function downloadDataFromFTP() {
     
     // Check if remote data directory exists
     try {
-      await client.list(FTP_CONFIG.remoteBasePath);
-      console.log(`📂 Found remote data directory: ${FTP_CONFIG.remoteBasePath}`);
+      await client.list(FTP_CONFIG.remoteDataPath);
+      console.log(`📂 Found remote data directory: ${FTP_CONFIG.remoteDataPath}`);
     } catch (error) {
-      console.error(`❌ Remote data directory not found: ${FTP_CONFIG.remoteBasePath}`);
+      console.error(`❌ Remote data directory not found: ${FTP_CONFIG.remoteDataPath}`);
       console.error('Make sure the remote path exists or check your FTP configuration');
       return false;
     }
     
     // Download entire data directory
     console.log(`⬇️  Downloading remote data folder to local...`);
-    await client.downloadToDir(localDataDir, FTP_CONFIG.remoteBasePath);
+    await client.downloadToDir(localDataDir, FTP_CONFIG.remoteDataPath);
     console.log(`✅ Data folder downloaded successfully!`);
     
     // List what was downloaded
@@ -90,7 +91,7 @@ function listDirectoryContents(dir, indent) {
 async function main() {
   console.log('🌐 FTP Data Download Script');
   console.log('============================');
-  console.log(`Source: ${FTP_CONFIG.host}${FTP_CONFIG.remoteBasePath}`);
+  console.log(`Source: ${FTP_CONFIG.host}${FTP_CONFIG.remoteDataPath}`);
   console.log(`Target: ${localDataDir}`);
   console.log('');
   

@@ -77,7 +77,6 @@ const BlogPostDetail = () => {
         <div className="detail-meta">
           <span className="detail-date">{post.date}</span>
           <span className="detail-author">by {post.author}</span>
-          {post.jurisdiction && <span className="detail-jurisdiction">Jurisdiction: {post.jurisdiction}</span>}
           {post.citation && <span className="detail-citation">Citation: {post.citation}</span>}
         </div>
       </div>

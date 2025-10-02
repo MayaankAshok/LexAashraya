@@ -1,6 +1,6 @@
 import '../styles/BlogPost.css';
 import type { BlogPostProps } from '../types';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AttachmentServiceFactory } from '../services/attachmentServiceFactory';
 
 const BlogPost = ({ 
@@ -12,11 +12,26 @@ const BlogPost = ({
   image, 
   tags, 
   citation, 
-  jurisdiction,
   attachments,
   // relevancePercentage no longer used for star rating
   matchedTags
 }: BlogPostProps) => {
+  const navigate = useNavigate();
+  
+  const handleReadMore = () => {
+    // If there are attachments, open the first one in a new tab
+    if (attachments && attachments.length > 0) {
+      try {
+        AttachmentServiceFactory.viewFile(attachments[0]);
+      } catch (error) {
+        console.error('Error viewing file:', error);
+        alert('Failed to view file');
+      }
+    } else {
+      // If no attachments, navigate to the detailed page
+      navigate(`/post/${id}`);
+    }
+  };
   
   return (
     <div className="blog-post">
@@ -30,7 +45,6 @@ const BlogPost = ({
           <div className="blog-meta">
           <span className="blog-date">{date}</span>
           <span className="blog-author">by {author}</span>
-          {jurisdiction && <span className="blog-jurisdiction">Jurisdiction: {jurisdiction}</span>}
           {citation && <span className="blog-citation">Citation: {citation}</span>}
           {attachments && attachments.length > 0 && (
             <span className="blog-attachments">
@@ -84,7 +98,7 @@ const BlogPost = ({
             ))
           )}
         </div>
-        <Link to={`/post/${id}`} className="read-more-button">Read Full Analysis</Link>
+        <button onClick={handleReadMore} className="read-more-button">Read More</button>
       </div>
     </div>
   );
