@@ -17,7 +17,8 @@ const FTP_CONFIG = {
   password: process.env.FTP_PASSWORD || 'your-password',
   port: parseInt(process.env.FTP_PORT) || 21,
   secure: false, // Set to true if using FTPS
-  remoteBasePath: process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html' // Root of your website directory
+  // Build artifacts go to public_html (parent of data folder)
+  remoteBasePath: (process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html/data').replace('/data', '')
 };
 
 // Build directories
@@ -50,8 +51,30 @@ async function uploadBuildToFTP() {
         console.log(`⚠️  Could not create remote directory: ${error.message}`);
       }
       
-      // Upload static files to base path
-      await client.uploadFromDir(staticBuildDir, FTP_CONFIG.remoteBasePath);
+      // Upload static files to base path, excluding the data folder
+      console.log('📤 Uploading files (excluding data folder)...');
+      const items = fs.readdirSync(staticBuildDir);
+      
+      for (const item of items) {
+        // Skip the data folder - it's managed separately
+        if (item === 'data') {
+          console.log(`⏭️  Skipping data folder`);
+          continue;
+        }
+        
+        const itemPath = path.join(staticBuildDir, item);
+        const remotePath = path.posix.join(FTP_CONFIG.remoteBasePath, item);
+        const stats = fs.statSync(itemPath);
+        
+        if (stats.isDirectory()) {
+          console.log(`📁 Uploading directory: ${item}`);
+          await client.uploadFromDir(itemPath, remotePath);
+        } else {
+          console.log(`📄 Uploading file: ${item}`);
+          await client.uploadFrom(itemPath, remotePath);
+        }
+      }
+      
       uploadCount++;
       console.log('✅ Static build uploaded successfully!\n');
     } else {
