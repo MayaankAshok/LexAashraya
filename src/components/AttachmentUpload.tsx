@@ -9,16 +9,6 @@ interface AttachmentUploadProps {
   maxFileSize?: number; // Max file size in MB
 }
 
-const ALLOWED_TYPES = [
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-];
-
-const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
-
 const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ 
   attachments, 
   onAttachmentsChange, 
@@ -44,10 +34,29 @@ const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (type: string): string => {
+  const getFileIcon = (type: string, filename?: string): string => {
+    // Check by MIME type first
     if (type.includes('pdf')) return '📄';
     if (type.includes('word')) return '📝';
     if (type.includes('powerpoint') || type.includes('presentation')) return '📊';
+    if (type.includes('spreadsheet') || type.includes('excel')) return '📈';
+    if (type.includes('image')) return '🖼️';
+    if (type.includes('video')) return '🎥';
+    if (type.includes('audio')) return '🎵';
+    if (type.includes('zip') || type.includes('compressed')) return '📦';
+    if (type.includes('text')) return '📃';
+    
+    // Check by file extension if filename is provided
+    if (filename) {
+      const ext = filename.toLowerCase().split('.').pop();
+      if (ext === 'zip' || ext === 'rar' || ext === '7z') return '📦';
+      if (ext === 'jpg' || ext === 'jpeg' || ext === 'png' || ext === 'gif' || ext === 'svg') return '🖼️';
+      if (ext === 'mp4' || ext === 'avi' || ext === 'mov') return '🎥';
+      if (ext === 'mp3' || ext === 'wav' || ext === 'ogg') return '🎵';
+      if (ext === 'txt' || ext === 'md') return '📃';
+      if (ext === 'xls' || ext === 'xlsx' || ext === 'csv') return '📈';
+    }
+    
     return '📎';
   };
 
@@ -57,16 +66,7 @@ const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
       return `File size exceeds ${maxFileSize}MB limit`;
     }
 
-    // Check file type
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      const hasValidExtension = ALLOWED_EXTENSIONS.some(ext => 
-        file.name.toLowerCase().endsWith(ext)
-      );
-      if (!hasValidExtension) {
-        return 'Invalid file type. Only PDF, Word, and PowerPoint files are allowed.';
-      }
-    }
-
+    // All file types are now allowed - no type restrictions
     return null;
   };
 
@@ -184,14 +184,13 @@ const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
           <div className="upload-icon">📎</div>
           <div className="upload-text">
             <p>Drag and drop files here, or click to select</p>
-            <p className="upload-subtext">PDF, Word documents, and PowerPoint presentations</p>
+            <p className="upload-subtext">Any file type accepted (max {maxFileSize}MB per file)</p>
           </div>
         </div>
         <input
           ref={fileInputRef}
           type="file"
           multiple
-          accept=".pdf,.doc,.docx,.ppt,.pptx"
           onChange={handleFileSelect}
           style={{ display: 'none' }}
         />
@@ -211,7 +210,7 @@ const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
           {attachments.map((attachment) => (
             <div key={attachment.id} className="attachment-item">
               <div className="attachment-info-section">
-                <span className="attachment-icon">{getFileIcon(attachment.type)}</span>
+                <span className="attachment-icon">{getFileIcon(attachment.type, attachment.name)}</span>
                 <div className="attachment-details">
                   <span className="attachment-name">{attachment.name}</span>
                   <span className="attachment-meta">

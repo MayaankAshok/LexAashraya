@@ -8,6 +8,7 @@ import PostEditor from './components/PostEditor'
 import Disclaimer from './components/Disclaimer'
 import type { BlogPostProps } from './types'
 import { BlogServiceFactory } from './services/blogServiceFactory'
+import { useHardRefresh } from './hooks/useHardRefresh'
 
 function App() {
   const [blogPosts, setBlogPosts] = useState<BlogPostProps[]>([])
@@ -19,6 +20,9 @@ function App() {
     query?: string;
     tags?: string[];
   }>({ mode: 'all' })
+  
+  // Enable hard refresh with cache clearing via Ctrl+Shift+R
+  useHardRefresh()
   
   // Function to handle disclaimer close
   const handleDisclaimerClose = () => {
@@ -101,9 +105,12 @@ function App() {
       
       <header className="app-header">
         <Link to="/" className="title-link">
-          <h1>Legal Insight</h1>
+          <img src="/logo.svg" alt="LexAashraya Logo" className="header-logo" />
+          <div className="header-text">
+            <h1>LexAashraya</h1>
+            <p className="header-tagline">Attorney-at-Law</p>
+          </div>
         </Link>
-        <p className="header-tagline">Navigating the Complexities of Law</p>
         {BlogServiceFactory.shouldShowAdminUI() && (
           <div className="admin-controls">
             <Link to="/admin/posts" className="admin-link">Admin: Manage Posts</Link>

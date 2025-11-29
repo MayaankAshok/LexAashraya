@@ -5,7 +5,7 @@ echo ========================================
 echo.
 
 echo Building static website...
-npm run build:static
+call npm run build:static
 if %ERRORLEVEL% neq 0 (
     echo.
     echo Build failed with error code %ERRORLEVEL%
@@ -19,8 +19,9 @@ echo Build completed successfully!
 echo.
 
 echo Uploading to FTP server...
-cd /d "%~dp0server"
+pushd server
 node ftp-upload-build.js
+popd
 
 if %ERRORLEVEL% equ 0 (
     echo.

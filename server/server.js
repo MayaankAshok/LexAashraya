@@ -482,24 +482,10 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter for allowed file types
+// File filter - now accepts all file types
 const fileFilter = (req, file, cb) => {
-  const allowedMimes = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-  ];
-
-  const allowedExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
-  const fileExtension = path.extname(file.originalname).toLowerCase();
-
-  if (allowedMimes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Invalid file type. Only PDF, Word, and PowerPoint files are allowed.'), false);
-  }
+  // Accept all file types - no restrictions
+  cb(null, true);
 };
 
 const upload = multer({
@@ -955,9 +941,7 @@ app.use((error, req, res, next) => {
     }
   }
   
-  if (error.message === 'Invalid file type. Only PDF, Word, and PowerPoint files are allowed.') {
-    return res.status(400).json({ error: error.message });
-  }
+  // File type restrictions removed - all types are allowed
 
   console.error('Unhandled error:', error);
   res.status(500).json({ error: 'Internal server error' });
