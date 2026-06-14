@@ -18,7 +18,7 @@ const FTP_CONFIG = {
   port: parseInt(process.env.FTP_PORT) || 21,
   secure: false, // Set to true if using FTPS
   remoteBasePath: process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html',
-  remoteDataPath: `${process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html'}/data`
+  remoteDataPath: `${process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html'}`
 };
 
 // Local data directory
@@ -108,20 +108,18 @@ async function uploadDataToFTP() {
   }
 }
 
-// Run the upload if this script is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  console.log('🔧 FTP Data Upload Script');
-  console.log('=' .repeat(50));
-  
-  uploadDataToFTP()
-    .then(() => {
-      console.log('\n✅ Script completed successfully');
-      process.exit(0);
-    })
-    .catch(error => {
-      console.error('\n❌ Script failed:', error.message);
-      process.exit(1);
-    });
-}
+// Run the upload
+console.log('🔧 FTP Data Upload Script');
+console.log('=' .repeat(50));
+
+uploadDataToFTP()
+  .then(() => {
+    console.log('\n✅ Script completed successfully');
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error('\n❌ Script failed:', error.message);
+    process.exit(1);
+  });
 
 export { uploadDataToFTP };

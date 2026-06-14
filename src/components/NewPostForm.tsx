@@ -12,7 +12,7 @@ interface NewPostFormProps {
 const NewPostForm = ({ onPostCreated }: NewPostFormProps) => {
   const navigate = useNavigate();  const [formData, setFormData] = useState({
     title: '',
-    author: '',
+    author: 'Ashok Sathyanathan, Founder - LexAashraya',
     summary: '',
     content: '',
     jurisdiction: 'Federal',
@@ -56,7 +56,7 @@ const NewPostForm = ({ onPostCreated }: NewPostFormProps) => {
       // Reset the form
     setFormData({
       title: '',
-      author: '',
+      author: 'Ashok Sathyanathan, Founder - LexAashraya',
       summary: '',
       content: '',
       jurisdiction: 'Federal',

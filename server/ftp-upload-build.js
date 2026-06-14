@@ -116,20 +116,18 @@ async function uploadBuildToFTP() {
   }
 }
 
-// Run the upload if this script is executed directly
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  console.log('🔧 FTP Build Upload Script');
-  console.log('=' .repeat(50));
-  
-  uploadBuildToFTP()
-    .then(() => {
-      console.log('\n✅ Script completed successfully');
-      process.exit(0);
-    })
-    .catch(error => {
-      console.error('\n❌ Script failed:', error.message);
-      process.exit(1);
-    });
-}
+// Run the upload
+console.log('🔧 FTP Build Upload Script');
+console.log('=' .repeat(50));
+
+uploadBuildToFTP()
+  .then(() => {
+    console.log('\n✅ Script completed successfully');
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error('\n❌ Script failed:', error.message);
+    process.exit(1);
+  });
 
 export { uploadBuildToFTP };

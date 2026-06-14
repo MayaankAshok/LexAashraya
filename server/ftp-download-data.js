@@ -18,7 +18,7 @@ const FTP_CONFIG = {
   port: parseInt(process.env.FTP_PORT) || 21,
   secure: false,
   remoteBasePath: process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html',
-  remoteDataPath: `${process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html'}/data`
+  remoteDataPath: `${process.env.FTP_REMOTE_BASE_PATH || '/domains/lexaashraya.in/public_html'}`
 };
 
 // Local paths
@@ -107,9 +107,7 @@ async function main() {
 }
 
 // Handle script execution
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(error => {
-    console.error('Fatal error:', error);
-    process.exit(1);
-  });
-}
+main().catch(error => {
+  console.error('Fatal error:', error);
+  process.exit(1);
+});

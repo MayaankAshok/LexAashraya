@@ -19,16 +19,17 @@ const PostEditor = ({ isNew = false, onPostSaved, onPostDeleted }: PostEditorPro
     // Determine if we're in edit mode or create mode
   const isEditMode = location.pathname.includes('/edit/') && id;
   const isCreateMode = isNew || location.pathname.includes('/new');
+    const defaultAuthor = 'Ashok Sathyanathan, Founder - LexAashraya';
     const [formData, setFormData] = useState({
-    title: '',
-    author: '',
-    summary: '',
-    content: '',
-    jurisdiction: 'Federal',
-    tags: '',
-    citation: '',
-    image: ''
-  });
+      title: '',
+      author: defaultAuthor,
+      summary: '',
+      content: '',
+      jurisdiction: 'Federal',
+      tags: '',
+      citation: '',
+      image: ''
+    });
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
